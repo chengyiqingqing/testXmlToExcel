@@ -59,6 +59,8 @@ public class analyzeTool {
                     File[] valueDirectoryFiles = (File[]) resDirectoryFiles[i].listFiles();
                     for (File file : valueDirectoryFiles) {// 基本都是一个strings.xml,可能会有demens,colors;
                         // 对单个string.xml文件进行操作
+                        System.out.println(" -- "+file.getAbsolutePath());
+                        System.out.println("");
                         analyzeStringXmlFile(file, hashMap);
                     }
                     // 进行补全，因为string_xx.xml文件的个数会少于value目录下的string的个数，所以进行补全。
@@ -80,7 +82,7 @@ public class analyzeTool {
         }
     }
 
-    private void analyzeStringXmlFile(File file, LinkedHashMap<String, ArrayList<String>> hashMap) {
+    public void analyzeStringXmlFile(File file, LinkedHashMap<String, ArrayList<String>> hashMap) {
         if (file.getName().contains("string") && file.getName().contains(".xml")) {
             try {
                 DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -117,6 +119,70 @@ public class analyzeTool {
                 e.printStackTrace();
             }
         }
+    }
+
+    public LinkedHashMap<String, ArrayList<String>> analyzeStringXmlFiless(File file, LinkedHashMap<String, ArrayList<String>> hashMap) {
+        if (file.getName().contains("string") && file.getName().contains(".xml")) {
+            try {
+                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                Document doc = (Document) dBuilder.parse(file);
+                doc.getDocumentElement().normalize();
+                System.out.println("Root element:" + doc.getDocumentElement().getNodeName());
+//                NodeList nodeList = doc.getElementsByTagName("string");
+//                ArrayList<String> arrayList;
+//                for (int n = 0; n < nodeList.getLength(); n++) {
+//                    Node nNode = nodeList.item(n);
+//                    if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+//                        Element eElement = (Element) nNode;
+//                        String key = eElement.getAttribute("name");
+//                        String value = eElement.getTextContent();
+//                        //如果含有该Key；
+//                        if (hashMap.containsKey(key)) {
+//                            ArrayList<String> arrayListContainKey = hashMap.get(key);
+//                            arrayListContainKey.add(value);
+//                            hashMap.put(key, arrayListContainKey);
+//                        } else {//没有此key;
+//                            arrayList = new ArrayList<>();
+//                            arrayList.add(value);
+//                            hashMap.put(key, arrayList);
+//                        }
+//                    }
+//                }
+                NodeList nodeList = doc.getElementsByTagName("mtb_base_layout");
+                ArrayList<String> arrayList;
+                for (int n = 0; n < nodeList.getLength(); n++) {
+                    Node nNode = nodeList.item(n);
+                    if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                        Element eElement = (Element) nNode;
+//                        String value = eElement.getAttribute("ad_config_id");
+                        System.out.println(getValue(eElement, "ad_config_id"));
+                        System.out.println(getValue(eElement, "animator"));
+                        System.out.println(getValue(eElement, "is_main_ad"));
+                        System.out.println(getValue(eElement, "page_id"));
+                        System.out.println(getValue(eElement, "position"));
+
+                        NodeList dspNodeList = eElement.getElementsByTagName("dsp");
+                        for (int i = 0; i < dspNodeList.getLength(); i++) {
+                            Node dspNode = dspNodeList.item(i);
+                            if (dspNode.getNodeType() == Node.ELEMENT_NODE) {
+                                Element dspElement = (Element) dspNode;
+                                System.out.println(getValue(dspElement, "name"));
+                            }
+                        }
+
+                    }
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return hashMap;
+    }
+
+    public String getValue(Element eElement, String key) {
+        return "" + key + " -- " + eElement.getAttribute(key);
     }
 
     private void fillUpValue(HashMap<String, ArrayList<String>> hashMap) {
