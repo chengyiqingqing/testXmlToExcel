@@ -12,8 +12,8 @@ public class Main {
         analyzeTool analyzeTool = new analyzeTool();
 //        analyzeTool.analyze();
          ;
-        LinkedHashMap<String, ArrayList<String>> map = analyzeTool.analyzeStringXmlFiless(new File("/Users/shaowenwen/workFile/res/strings.xml"),
-                new LinkedHashMap<String, ArrayList<String>>());
+        LinkedHashMap<String, Model> map = analyzeTool.analyzeStringXmlFiless(new File("/Users/shaowenwen/workFile/res/strings.xml"),
+                new LinkedHashMap<String, Model>());
         System.err.println(" -- "+map.size());
        /* for (Map.Entry<String, ArrayList<String>> entry : map.entrySet()) {
             System.err.println(""+entry.getKey()+" -- "+entry.getValue());

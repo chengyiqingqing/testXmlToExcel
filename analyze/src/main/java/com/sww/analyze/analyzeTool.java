@@ -26,6 +26,7 @@ import jxl.write.WritableWorkbook;
  * (1)javax.xml.parsers 包中的DocumentBuilderFactory用于创建DOM模式的解析器对象 ， DocumentBuilderFactory是一个抽象工厂类，它不能直接实例化，
  * 但该类提供了一个newInstance方法 ，这个方法会根据本地平台默认安装的解析器，自动创建一个工厂的对象并返回。
  * (2)jxl表格输出
+ *
  * @author ShaoWenWen
  * @date 2019-10-29
  */
@@ -59,7 +60,7 @@ public class analyzeTool {
                     File[] valueDirectoryFiles = (File[]) resDirectoryFiles[i].listFiles();
                     for (File file : valueDirectoryFiles) {// 基本都是一个strings.xml,可能会有demens,colors;
                         // 对单个string.xml文件进行操作
-                        System.out.println(" -- "+file.getAbsolutePath());
+                        System.out.println(" -- " + file.getAbsolutePath());
                         System.out.println("");
                         analyzeStringXmlFile(file, hashMap);
                     }
@@ -71,8 +72,8 @@ public class analyzeTool {
         outputExcel(hashMap, out_path);
     }
 
-    private void resetCategoriesOrder(File[] files){
-        for (int index = 0;index <files.length;index++) {
+    private void resetCategoriesOrder(File[] files) {
+        for (int index = 0; index < files.length; index++) {
             if (files[index].getName().equals("values") && index != 0) {
                 File file = files[index];
                 files[index] = files[0];
@@ -121,7 +122,7 @@ public class analyzeTool {
         }
     }
 
-    public LinkedHashMap<String, ArrayList<String>> analyzeStringXmlFiless(File file, LinkedHashMap<String, ArrayList<String>> hashMap) {
+    public LinkedHashMap<String, Model> analyzeStringXmlFiless(File file, LinkedHashMap<String, Model> hashMap) {
         if (file.getName().contains("string") && file.getName().contains(".xml")) {
             try {
                 DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -129,38 +130,25 @@ public class analyzeTool {
                 Document doc = (Document) dBuilder.parse(file);
                 doc.getDocumentElement().normalize();
                 System.out.println("Root element:" + doc.getDocumentElement().getNodeName());
-//                NodeList nodeList = doc.getElementsByTagName("string");
-//                ArrayList<String> arrayList;
-//                for (int n = 0; n < nodeList.getLength(); n++) {
-//                    Node nNode = nodeList.item(n);
-//                    if (nNode.getNodeType() == Node.ELEMENT_NODE) {
-//                        Element eElement = (Element) nNode;
-//                        String key = eElement.getAttribute("name");
-//                        String value = eElement.getTextContent();
-//                        //如果含有该Key；
-//                        if (hashMap.containsKey(key)) {
-//                            ArrayList<String> arrayListContainKey = hashMap.get(key);
-//                            arrayListContainKey.add(value);
-//                            hashMap.put(key, arrayListContainKey);
-//                        } else {//没有此key;
-//                            arrayList = new ArrayList<>();
-//                            arrayList.add(value);
-//                            hashMap.put(key, arrayList);
-//                        }
-//                    }
-//                }
                 NodeList nodeList = doc.getElementsByTagName("mtb_base_layout");
                 ArrayList<String> arrayList;
                 for (int n = 0; n < nodeList.getLength(); n++) {
                     Node nNode = nodeList.item(n);
                     if (nNode.getNodeType() == Node.ELEMENT_NODE) {
                         Element eElement = (Element) nNode;
-//                        String value = eElement.getAttribute("ad_config_id");
-                        System.out.println(getValue(eElement, "ad_config_id"));
-                        System.out.println(getValue(eElement, "animator"));
-                        System.out.println(getValue(eElement, "is_main_ad"));
-                        System.out.println(getValue(eElement, "page_id"));
-                        System.out.println(getValue(eElement, "position"));
+                        String positionId = getValue(eElement, "position");
+//                        System.out.println(getValue(eElement, "ad_config_id"));
+//                        System.out.println(getValue(eElement, "animator"));
+//                        System.out.println(getValue(eElement, "is_main_ad"));
+//                        System.out.println(getValue(eElement, "page_id"));
+//                        System.out.println(getValue(eElement, "position"));
+                        Model model = new Model(positionId,
+                                getValue(eElement, "ad_config_id"),
+                                getValue(eElement, "animator"),
+                                getValue(eElement, "is_main_ad"),
+                                getValue(eElement, "page_id")
+                        );
+                        hashMap.put(positionId, model);
 
                         NodeList dspNodeList = eElement.getElementsByTagName("dsp");
                         for (int i = 0; i < dspNodeList.getLength(); i++) {
@@ -168,6 +156,8 @@ public class analyzeTool {
                             if (dspNode.getNodeType() == Node.ELEMENT_NODE) {
                                 Element dspElement = (Element) dspNode;
                                 System.out.println(getValue(dspElement, "name"));
+                                Model.DspNode dspNode1 = getDspNode(dspElement);
+                                model.dspLinkedHashMap.put(getValue(dspElement, "name"), dspNode1);
                             }
                         }
 
@@ -179,6 +169,36 @@ public class analyzeTool {
             }
         }
         return hashMap;
+    }
+
+    public Model.DspNode getDspNode(Element dspElement) {
+        String path = dspElement.getAttribute("name");
+        Model.DspNode dspNode = null;
+
+        if (path.equals("com.meitu.business.ads.tencent.Tencent")) {
+            NodeList dspNodeList = dspElement.getElementsByTagName("tencent_app_id");
+            Element eElement = (Element) dspNodeList.item(0);
+            String appId = eElement.getTextContent();
+
+            dspNodeList = dspElement.getElementsByTagName("tencent_pos_id");
+            eElement = (Element) dspNodeList.item(0);
+            String pos_id = eElement.getTextContent();
+
+            dspNodeList = dspElement.getElementsByTagName("ui_type");
+            eElement = (Element) dspNodeList.item(0);
+            String ui_type = eElement.getTextContent();
+
+            dspNodeList = dspElement.getElementsByTagName("load_type");
+            eElement = (Element) dspNodeList.item(0);
+            String load_type = eElement.getTextContent();
+            dspNode = new Model.DspNode(path, appId, pos_id, ui_type, load_type);
+            System.out.println(dspNode);
+        } else if (path.equals("com.meitu.business.ads.toutiao.Toutiao")) {
+            System.out.println("toutiao");
+        } else if (path.equals("com.meitu.business.ads.dfp.DFP")) {
+            System.out.println("dfp");
+        }
+        return dspNode;
     }
 
     public String getValue(Element eElement, String key) {
@@ -217,10 +237,10 @@ public class analyzeTool {
                     WritableCellFormat wcf1 = new WritableCellFormat();// 单元格样式
                     wcf1.setBackground(Colour.ORANGE);
                     Label label;
-                    if (arrayList.get(arr_i)!=null){
-                         label = new Label(++column, row, arrayList.get(arr_i));
+                    if (arrayList.get(arr_i) != null) {
+                        label = new Label(++column, row, arrayList.get(arr_i));
                     } else {
-                         label = new Label(++column, row, arrayList.get(arr_i), wcf1);
+                        label = new Label(++column, row, arrayList.get(arr_i), wcf1);
                     }
                     sheet.addCell(label);
                 }
