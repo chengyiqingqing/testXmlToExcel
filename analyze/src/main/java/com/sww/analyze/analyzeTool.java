@@ -9,6 +9,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -129,7 +130,7 @@ public class analyzeTool {
                 DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
                 Document doc = (Document) dBuilder.parse(file);
                 doc.getDocumentElement().normalize();
-                System.out.println("Root element:" + doc.getDocumentElement().getNodeName());
+                System.out.println("Root element: -- " + doc.getDocumentElement().getNodeName());
                 NodeList nodeList = doc.getElementsByTagName("mtb_base_layout");
                 ArrayList<String> arrayList;
                 for (int n = 0; n < nodeList.getLength(); n++) {
@@ -137,16 +138,14 @@ public class analyzeTool {
                     if (nNode.getNodeType() == Node.ELEMENT_NODE) {
                         Element eElement = (Element) nNode;
                         String positionId = getValue(eElement, "position");
-//                        System.out.println(getValue(eElement, "ad_config_id"));
-//                        System.out.println(getValue(eElement, "animator"));
-//                        System.out.println(getValue(eElement, "is_main_ad"));
-//                        System.out.println(getValue(eElement, "page_id"));
-//                        System.out.println(getValue(eElement, "position"));
                         Model model = new Model(positionId,
                                 getValue(eElement, "ad_config_id"),
                                 getValue(eElement, "animator"),
+                                getValue(eElement, "page_id"),
                                 getValue(eElement, "is_main_ad"),
-                                getValue(eElement, "page_id")
+                                getValue(eElement, "is_reward_ad"),
+                                getValue(eElement, "is_full_screen_ad"),
+                                getValue(eElement, "is_full_interstitial_ad")
                         );
                         hashMap.put(positionId, model);
 
@@ -155,9 +154,13 @@ public class analyzeTool {
                             Node dspNode = dspNodeList.item(i);
                             if (dspNode.getNodeType() == Node.ELEMENT_NODE) {
                                 Element dspElement = (Element) dspNode;
-                                System.out.println(getValue(dspElement, "name"));
-                                Model.DspNode dspNode1 = getDspNode(dspElement);
-                                model.dspLinkedHashMap.put(getValue(dspElement, "name"), dspNode1);
+//                                System.out.println(getValue(dspElement, "name"));
+                                if (isDfp(dspElement)){
+                                    putDFPNodeList(model.dspLinkedHashMap, dspElement);
+                                } else {
+                                    Model.DspNode dspNode1 = getDspNode(dspElement);
+                                    model.dspLinkedHashMap.put(getValue(dspElement, "name"), dspNode1);
+                                }
                             }
                         }
 
@@ -171,38 +174,111 @@ public class analyzeTool {
         return hashMap;
     }
 
+    public boolean isDfp(Element dspElement) {
+        String path = dspElement.getAttribute("name");
+        if (path != null && path.contains("dfp")) {
+            return true;
+        }
+        return false;
+    }
+
+    public void putDFPNodeList(LinkedHashMap<String, Model.DspNode> dspLinkedHashMap, Element dspElement) {
+        Model.DspNode dspNode = null;
+        String path = dspElement.getAttribute("name");
+
+        String ui_type = getContentValue(dspElement, "ui_type");
+        String dfp_app_id = getContentValue(dspElement, "dfp_app_id");
+        String dfp_mo_unit_id = getContentValue(dspElement, "dfp_mo_unit_id");
+        String dfp_tw_unit_id = getContentValue(dspElement, "dfp_tw_unit_id");
+        String dfp_hk_unit_id = getContentValue(dspElement, "dfp_hk_unit_id");
+        String dfp_hw_unit_id = getContentValue(dspElement, "dfp_hw_unit_id");
+        String adSourceTag = null;
+        if (!isEmpty(dfp_mo_unit_id)) {
+            adSourceTag = "dfp_mo";
+            dspNode = new Model.DspNode(adSourceTag,
+                    adSourceTag,
+                    dfp_app_id,
+                    dfp_mo_unit_id,
+                    ui_type,
+                    "null");
+            dspLinkedHashMap.put(adSourceTag, dspNode);
+        }
+        if (!isEmpty(dfp_tw_unit_id)){
+            adSourceTag = "dfp_tw";
+            dspNode = new Model.DspNode(adSourceTag,
+                    adSourceTag,
+                    dfp_app_id,
+                    dfp_tw_unit_id,
+                    ui_type,
+                    "null");
+            dspLinkedHashMap.put(adSourceTag, dspNode);
+        }
+        if (!isEmpty(dfp_hk_unit_id)){
+            adSourceTag = "dfp_hk";
+            dspNode = new Model.DspNode(adSourceTag,
+                    adSourceTag,
+                    dfp_app_id,
+                    dfp_hk_unit_id,
+                    ui_type,
+                    "null");
+            dspLinkedHashMap.put(adSourceTag, dspNode);
+        }
+        if (!isEmpty(dfp_hw_unit_id)){
+            adSourceTag = "dfp_hw";
+            dspNode = new Model.DspNode(adSourceTag,
+                    adSourceTag,
+                    dfp_app_id,
+                    dfp_hw_unit_id,
+                    ui_type,
+                    "null");
+            dspLinkedHashMap.put(adSourceTag, dspNode);
+        }
+    }
+
+    public boolean isEmpty(String string) {
+        return string == null || string.trim().equals("");
+    }
+
     public Model.DspNode getDspNode(Element dspElement) {
         String path = dspElement.getAttribute("name");
         Model.DspNode dspNode = null;
-
         if (path.equals("com.meitu.business.ads.tencent.Tencent")) {
-            NodeList dspNodeList = dspElement.getElementsByTagName("tencent_app_id");
-            Element eElement = (Element) dspNodeList.item(0);
-            String appId = eElement.getTextContent();
-
-            dspNodeList = dspElement.getElementsByTagName("tencent_pos_id");
-            eElement = (Element) dspNodeList.item(0);
-            String pos_id = eElement.getTextContent();
-
-            dspNodeList = dspElement.getElementsByTagName("ui_type");
-            eElement = (Element) dspNodeList.item(0);
-            String ui_type = eElement.getTextContent();
-
-            dspNodeList = dspElement.getElementsByTagName("load_type");
-            eElement = (Element) dspNodeList.item(0);
-            String load_type = eElement.getTextContent();
-            dspNode = new Model.DspNode(path, appId, pos_id, ui_type, load_type);
-            System.out.println(dspNode);
+            dspNode = new Model.DspNode("gdt",
+                    path,
+                    getContentValue(dspElement, "tencent_app_id"),
+                    getContentValue(dspElement, "tencent_pos_id"),
+                    getContentValue(dspElement, "ui_type"),
+                    getContentValue(dspElement, "load_type"));
         } else if (path.equals("com.meitu.business.ads.toutiao.Toutiao")) {
-            System.out.println("toutiao");
-        } else if (path.equals("com.meitu.business.ads.dfp.DFP")) {
-            System.out.println("dfp");
+            dspNode = new Model.DspNode("toutiao",
+                    path,
+                    getContentValue(dspElement, "toutiao_app_id"),
+                    getContentValue(dspElement, "toutiao_pos_id"),
+                    getContentValue(dspElement, "ui_type"),
+                    getContentValue(dspElement, "load_type"));
+        } else if (path.equals("com.meitu.business.ads.adiva.Adiva")) {
+            dspNode = new Model.DspNode("adiva",
+                    path,
+                    getContentValue(dspElement, "adiva_app_id"),
+                    getContentValue(dspElement, "adiva_pos_id"),
+                    getContentValue(dspElement, "ui_type"),
+                    getContentValue(dspElement, "load_type"));
         }
         return dspNode;
     }
 
     public String getValue(Element eElement, String key) {
-        return "" + key + " -- " + eElement.getAttribute(key);
+        return eElement.getAttribute(key);
+    }
+
+    public String getContentValue(Element dspElement, String key) {
+        NodeList dspNodeList = dspElement.getElementsByTagName(key);
+        Element eElement = (Element) dspNodeList.item(0);
+        String appId = null;
+        if (eElement != null) {
+            appId = eElement.getTextContent();
+        }
+        return appId;
     }
 
     private void fillUpValue(HashMap<String, ArrayList<String>> hashMap) {
