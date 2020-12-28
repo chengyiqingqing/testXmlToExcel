@@ -33,7 +33,24 @@ public class Main {
                 }
             }
         }
-
+        String outputPath = "/Users/shaowenwen/workFile/res/analyzenew.xls";
+        String[] stringArray = new String[]{
+                "美图广告位Id",
+                "广告源",
+                "appId",
+                "三方广告位Id",
+                "广告展示类型",
+                "ad_config_id",
+                "广告pageId",
+                "animator",
+                "page_id",
+                "is_main_ad",
+                "is_reward_ad",
+                "is_full_screen_ad",
+                "is_full_interstitial_ad",
+                "is_normal_feed_ad",
+        };
+        analyzeTool.outputDataToExcel(stringArray, map, outputPath);
 
     }
 

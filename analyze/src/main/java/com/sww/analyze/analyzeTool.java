@@ -6,6 +6,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -17,6 +18,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import jxl.Workbook;
+import jxl.demo.Write;
 import jxl.format.Colour;
 import jxl.write.Label;
 import jxl.write.WritableCellFormat;
@@ -155,7 +157,7 @@ public class analyzeTool {
                             if (dspNode.getNodeType() == Node.ELEMENT_NODE) {
                                 Element dspElement = (Element) dspNode;
 //                                System.out.println(getValue(dspElement, "name"));
-                                if (isDfp(dspElement)){
+                                if (isDfp(dspElement)) {
                                     putDFPNodeList(model.dspLinkedHashMap, dspElement);
                                 } else {
                                     Model.DspNode dspNode1 = getDspNode(dspElement);
@@ -203,7 +205,7 @@ public class analyzeTool {
                     "null");
             dspLinkedHashMap.put(adSourceTag, dspNode);
         }
-        if (!isEmpty(dfp_tw_unit_id)){
+        if (!isEmpty(dfp_tw_unit_id)) {
             adSourceTag = "dfp_tw";
             dspNode = new Model.DspNode(adSourceTag,
                     adSourceTag,
@@ -213,7 +215,7 @@ public class analyzeTool {
                     "null");
             dspLinkedHashMap.put(adSourceTag, dspNode);
         }
-        if (!isEmpty(dfp_hk_unit_id)){
+        if (!isEmpty(dfp_hk_unit_id)) {
             adSourceTag = "dfp_hk";
             dspNode = new Model.DspNode(adSourceTag,
                     adSourceTag,
@@ -223,7 +225,7 @@ public class analyzeTool {
                     "null");
             dspLinkedHashMap.put(adSourceTag, dspNode);
         }
-        if (!isEmpty(dfp_hw_unit_id)){
+        if (!isEmpty(dfp_hw_unit_id)) {
             adSourceTag = "dfp_hw";
             dspNode = new Model.DspNode(adSourceTag,
                     adSourceTag,
@@ -288,6 +290,54 @@ public class analyzeTool {
                 arrlist.add(null);
             }
             hashMap.put(hashKey, arrlist);
+        }
+    }
+
+    public void outputDataToExcel(String[] titleArray, LinkedHashMap<String, Model> map, String path) {
+        try {
+            book = Workbook.createWorkbook(new File(path));
+            WritableSheet sheet = book.createSheet("testForExcel", 0);
+
+            for (int i = 0; i < titleArray.length; i++) {
+                sheet.addCell(new Label(i, 0, titleArray[i]));
+            }
+
+            // 定义开始输出的行数
+            int row = 2;
+            for (Map.Entry<String, Model> entry : map.entrySet()) {
+                String postionId = entry.getKey();
+                Model model = entry.getValue();
+                for (Map.Entry<String, Model.DspNode> entry1 : model.dspLinkedHashMap.entrySet()) {
+                    Model.DspNode dspNode = entry1.getValue();
+                    int columnIndex = 0;
+                    if (dspNode != null) {
+                        sheet.addCell(new Label(columnIndex++, row, postionId));
+                        sheet.addCell(new Label(columnIndex++, row, dspNode.path));
+                        sheet.addCell(new Label(columnIndex++, row, dspNode.appId));
+                        sheet.addCell(new Label(columnIndex++, row, dspNode.positionId));
+                        sheet.addCell(new Label(columnIndex++, row, dspNode.uiType));
+                        sheet.addCell(new Label(columnIndex++, row, dspNode.loadType));
+                        sheet.addCell(new Label(columnIndex++, row, model.ad_config_id));
+                        sheet.addCell(new Label(columnIndex++, row,  model.animator));
+                        sheet.addCell(new Label(columnIndex++, row,  model.page_id));
+                        sheet.addCell(new Label(columnIndex++, row,  model.is_main_ad));
+                        sheet.addCell(new Label(columnIndex++, row,  model.is_reward_ad));
+                        sheet.addCell(new Label(columnIndex++, row,  model.is_full_screen_ad));
+                        sheet.addCell(new Label(columnIndex++, row,  model.is_full_interstitial_ad));
+                    }
+                    row++;
+                }
+            }
+
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                book.write();
+                book.close();
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
         }
     }
 
